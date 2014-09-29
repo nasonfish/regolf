@@ -41,7 +41,10 @@ sub said{
 
 sub connected{
   my $self = shift;
-  $self->say(who => "NickServ", channel => "msg", "body" => "IDENTIFY regolf thisismypasswordprobably");
+  open my $file, '<', 'pwd.txt';
+  my $pwd = <$file>;
+  chomp($pwd);
+  $self->say(who => "NickServ", channel => "msg", "body" => "IDENTIFY regolf $pwd");
 }
 
 sub newRound{
