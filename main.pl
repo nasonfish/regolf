@@ -41,18 +41,23 @@ sub said{
     $self->newRound();
   } elsif($message->{channel} eq "msg" and $playing == 1){  # in pm, we /are/ playing
     my $score = $points;
+    my @goodmiss = ();
+    my @badmiss = ();
     foreach my $i (@good){
       if($i !~ /$message->{body}/){
-        $score -= 5;
+        $score -= length($i);
+        push @goodmiss, $i;
       }
     }
     foreach my $i (@bad){
       if($i =~ /$message->{body}/){
-        $score -= 5;
+        $score -= length($i);
+        push @badmiss, $i;
       }
     }
     $score -= length($message->{body});
-    $self->say(who => $message->{who}, channel=>"msg", body=>"Recieved your result!"); # who is the name of the person while channel is "msg" for pms
+    $score = $score < 0 ? 0 : $score;
+    $self->say(who => $message->{who}, channel=>"msg", body=>"$message->{body} " . (length(@goodmiss) == 0 ? "matches all positive strings" : "does not match " . join(", ", @goodmiss)) . (length(@badmiss) == 0 ? " and does not match any negative strings." : " and does match " . join(",", @badmiss))); # who is the name of the person while channel is "msg" for pms
     $roundexps{ $message->{who} } = $message->{body};
     $roundscores{ $message->{who} } = $score;
   }
@@ -72,11 +77,11 @@ sub newRound{
   my $amt = int(rand(7)+3); # from 3-9 words
   @good = @t_words[0 .. $amt]; # get the first <x> words
   @bad = @t_words[($amt+1) .. (($amt*2)+1)];  # and the second <x> words, so there's an equal amount.
-  $points = length(join("|", @good));
+  $points = length(join("", @good)) * 2;
   $self->say(channel => $channel, body => "Please match: " . join(", ", @good));  # . concatenates, join joins it as an array spliced together with ", "
   $self->say(channel => $channel, body => "Do not match: " . join(", ", @bad));
-  $self->say(channel => $channel, body => "You have 60 seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
-  $self->schedule_tick(60);  # sixty seconds later, we call tick{}. this was actually called five seconds after the bot started, but that should have been ignored. (TODO make that better, if the game starts too soon.)
+  $self->say(channel => $channel, body => "You have 120 seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
+  $self->schedule_tick(120);  # sixty seconds later, we call tick{}. this was actually called five seconds after the bot started, but that should have been ignored. (TODO make that better, if the game starts too soon.)
 }
 
 sub tick{
