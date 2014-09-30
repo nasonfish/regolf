@@ -10,10 +10,14 @@ use List::Util qw( shuffle );
 
 my $wordlist = '/usr/share/dict/words'; # This is our big dictionary of words to pick from. ideally we will make the words similar in some way.
 my @words = ();
+
+my @filters = ('(\w{3})\1');
+
 open WORDS, '<', $wordlist or die "Cannot open $wordlist:$!";
 while(my $word = <WORDS>){
   chomp($word);
-  push @words, $word if $word =~ /^[a-z]+$/;  # filter out names with capitol letters as well as apostrophes and stuff
+  my $f = $filters[rand @filters];
+  push @words, $word if $word =~ /^[a-z]+$/ and $word =~ /$f/;  # filter out names with capitol letters as well as apostrophes and stuff; apply a certain filter
 }
 close WORDS;
 
@@ -71,7 +75,7 @@ sub newRound{
   $points = length(join("|", @good));
   $self->say(channel => $channel, body => "Please match: " . join(", ", @good));  # . concatenates, join joins it as an array spliced together with ", "
   $self->say(channel => $channel, body => "Do not match: " . join(", ", @bad));
-  $self->say(channel => $channel, body => "You have 60 seconds.");
+  $self->say(channel => $channel, body => "You have 60 seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
   $self->schedule_tick(60);  # sixty seconds later, we call tick{}. this was actually called five seconds after the bot started, but that should have been ignored. (TODO make that better, if the game starts too soon.)
 }
 
