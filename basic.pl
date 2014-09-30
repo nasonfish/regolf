@@ -21,11 +21,13 @@ close WORDS;
 my $channel = "#regolf";
 my $playing = 0;
 
-
+my $points = 0;
 my @good = ();
 my @bad = ();  # two lists
 
-my %msgs = ();  # a hash!
+my %roundscores = ();  # hashes
+my %gamescores = ();
+my %roundexps = ();
 
 sub said{
   my($self, $message) = @_;  # the arguments of this function include the self object and the message, which contains all the information we need about the event.
@@ -34,8 +36,21 @@ sub said{
     $self->say(channel => $channel, body => "Beginning new regex golf game.");
     $self->newRound();
   } elsif($message->{channel} eq "msg" and $playing == 1){  # in pm, we /are/ playing
+    my $score = $points;
+    foreach my $i (@good){
+      if($i !~ /$message->{body}/){
+        $score -= 5;
+      }
+    }
+    foreach my $i (@bad){
+      if($i =~ /$message->{body}/){
+        $score -= 5;
+      }
+    }
+    $score -= length($message->{body});
     $self->say(who => $message->{who}, channel=>"msg", body=>"Recieved your result!"); # who is the name of the person while channel is "msg" for pms
-    $msgs{ $message->{who} } = $message->{body};
+    $roundexps{ $message->{who} } = $message->{body};
+    $roundscores{ $message->{who} } = $score;
   }
 }
 
@@ -53,6 +68,7 @@ sub newRound{
   my $amt = int(rand(7)+3); # from 3-9 words
   @good = @t_words[0 .. $amt]; # get the first <x> words
   @bad = @t_words[($amt+1) .. (($amt*2)+1)];  # and the second <x> words, so there's an equal amount.
+  $points = length(join("|", @good));
   $self->say(channel => $channel, body => "Please match: " . join(", ", @good));  # . concatenates, join joins it as an array spliced together with ", "
   $self->say(channel => $channel, body => "Do not match: " . join(", ", @bad));
   $self->say(channel => $channel, body => "You have 60 seconds.");
@@ -62,9 +78,10 @@ sub newRound{
 sub tick{
   my $self = shift;  # first arg is self
   if($playing){  # we are playing a game, otherwise this was errant, like in the first 5 seconds of the bot running.
-    foreach my $i (keys %msgs){
-      $self->say(channel=>$channel, body=>"$i: $msgs{$i}");  # just return nick: regex  into the channel.
+    foreach my $i (keys %roundexps){
+      $self->say(channel=>$channel, body=>"User $i submitted /$roundexps{$i}/ - worth $roundscores{$i} points.");  # just return nick: regex  into the channel.
     }
+    $self->newRound();
   }
 }
 
