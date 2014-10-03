@@ -39,6 +39,9 @@ sub said{
     $playing = 1;
     $self->say(channel => $channel, body => "Beginning new regex golf game.");
     $self->newRound();
+  } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!pause/){
+    $playing = 0;
+    $self->say(channel => $channel, body => "Pausing current regex golf game.")
   } elsif($message->{channel} eq "msg" and $playing == 1){  # in pm, we /are/ playing
     my $score = $points;
     my @goodmiss = ();
