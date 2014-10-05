@@ -133,7 +133,7 @@ sub said{
       $score = 0;
     }
     $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score) " . (!@goodmiss ? "matches \x0303all positive strings\x03" : ("does not match positive strings \x0303" . join(", ", @goodmiss) . "\x0f")) . (!@badmiss ? ", and does not match any \x0304negative strings\x0304." : (" and does match negative strings \x0304" . join(", ", @badmiss) . "\x0f"))); # who is the name of the person while channel is "msg" for pms
-    if(exists $roundscores{$message->{who}} and $roundscores{$message->{who}} < $score){
+    if(!exists $roundscores{$message->{who}} or $roundscores{$message->{who}} < $score){
       $roundexps{ $message->{who} } = $message->{body};
       $roundscores{ $message->{who} } = $score;
     }
