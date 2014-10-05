@@ -172,7 +172,7 @@ sub newRound{
   my $time = int(80 + (.25 * $points));
   $self->say(channel => $channel, body => "You have $time seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
   $hurryup = 0;
-  $self->schedule_tick($time);
+  $self->schedule_tick($time - 15);
 }
 
 sub tick{
