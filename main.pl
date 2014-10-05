@@ -15,6 +15,7 @@ my @bad = ();  # two lists
 
 my @filters = ('(\w{3}).*\1', '^_0.*_0$', '^[qwertyuiopasdfghjkl]+$', '^[a-f]+$', '^[m-r]+$', '=', '_0_1_2', '^(.)(.)(.?)(.?)(.?)(.?).?\6\5\4\3\2\1$');
 my @characters = ("a".."z");
+my $hurryup = 0; # we set two timers, one for the hurry up message, so this flicks back and forth between 0 and 1 depending on if we're waiting to end the round (1) or not (0)
 
 sub wordset {
   my ($self, $amt) = @_;
@@ -100,6 +101,7 @@ sub said{
     $playing = 0;
     $self->say(channel => $channel, body => "Pausing current regex golf game.");
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!haltround/ and $message->{who} eq "nasonfish"){
+    $hurryup = 1;
     $self->schedule_tick(1);
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!scores/){
     $self->scores();
@@ -162,12 +164,18 @@ sub newRound{
   $self->say(channel => $channel, body => "\x0305Please match: \x02\x0303" . join(", ", @good) . "\x0f\x02");  # . concatenates, join joins it as an array spliced together with ", "
   $self->say(channel => $channel, body => "\x0305Do not match: \x0304\x02" . join(", ", @bad) . "\x0f\x02");
   $self->say(channel => $channel, body => "You have 120 seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
-  $self->schedule_tick(120);  # sixty seconds later, we call tick{}. this was actually called five seconds after the bot started, but that should have been ignored. (TODO make that better, if the game starts too soon.)
+  $hurryup = 0;
+  $self->schedule_tick(105);
 }
 
 sub tick{
   my $self = shift;  # first arg is self
   if($playing){  # we are playing a game, otherwise this was errant, like in the first 5 seconds of the bot running.
+    if(!$hurryup){
+      $self->say(channel=>$channel, body=>"Hurry up! You only have 15 seconds left to finish your expression!");
+      $hurryup = 1;
+      return undef;
+    }
     if(!%roundexps){
       $self->say(channel=>$channel, body=>"No users submitted regular expressions! Pausing game - use \x02!start\x02 to resume.");
       $playing = 0;
@@ -203,7 +211,7 @@ sub checkwin{
   }
   if($winner){
     %gamescores = ();
-    $self->say(channel=>$channel, body=>"We have a winner! Congratulations to \x02$key\x02, for winning with \x02$gamescores{ $key }\x02 points!");
+    $self->say(channel=>$channel, body=>"We have a winner! Congratulations to \x02$winner\x02, for winning with \x02$winscore\x02 points!");
     $playing = 0;
   }
 }
