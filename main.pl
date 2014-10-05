@@ -126,9 +126,9 @@ sub said{
         print STDOUT "Hit $i\n";
       }
     }
-    $score *= 2**(-(@goodmiss + @badmiss));
-    $score -= 2 * length($message->{body});
-    $score = $score < 0 ? 0 : $score;
+    $score *= 1.5**(-(@goodmiss + @badmiss));
+    $score -= 3 * length($message->{body});
+    $score = $score < 0 ? 0 : int($score);
     if(@good == @goodmiss || @bad == @badmiss){
       $score = 0;
     }
@@ -187,7 +187,7 @@ sub tick{
 sub checkwin{
   my $self = shift;
   foreach my $key (keys %gamescores){
-    if($gamescores{ $key } >= 200){
+    if($gamescores{ $key } >= 100){
       $self->say(channel=>$channel, body=>"We have a winner! Congratulations to $key, for winning with $gamescores{ $key } points!");
       $playing = 0;
     }
