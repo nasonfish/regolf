@@ -13,7 +13,7 @@ my $wordlist = '/usr/share/dict/words'; # This is our big dictionary of words to
 my @good = ();
 my @bad = ();  # two lists
 
-my @filters = ('(\w{3}).*\1', '^_0.*_0$', '^[qwertyuiopasdfghjkl]+$', '^[a-f]+$', '^[m-r]+$', '=', '_0_1_2', '^(.)(.)(.?)(.?)(.?)(.?).?\6\5\4\3\2\1$');
+my @filters = ('(\w{3}).*\1', '^_0.*_0$', '^[qwertyuiopasdfghjkl]+$', '^[a-f]+$', '=', '_0_1_2', '^(.)(.)(.?)(.?)(.?)(.?).?\6\5\4\3\2\1$');
 my @characters = ("a".."z");
 my $hurryup = 0; # we set two timers, one for the hurry up message, so this flicks back and forth between 0 and 1 depending on if we're waiting to end the round (1) or not (0)
 
@@ -38,7 +38,7 @@ sub wordset {
       open WORDS, '<', $wordlist or die "Cannot open $wordlist:$!";
       while(my $word = <WORDS>){
         chomp($word);
-        push @words, $word if $word =~ /^[a-z]{2,}$/ and $word =~ /$f/;  # filter out names with capitol letters as well as apostrophes and stuff; apply a certain filter
+        push @words, $word if $word =~ /^[a-z]{2,}$/i and $word =~ /$f/i;  # filter out names with capitol letters as well as apostrophes and stuff; apply a certain filter
       }
       close WORDS;
     }
