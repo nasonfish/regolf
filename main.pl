@@ -85,7 +85,7 @@ sub scores{
   }
   $scorestr =~ s/..$//;
   $scorestr =~ s/^$/No scores have been recorded yet./;
-  $self->say(channel => $channel, body => "\x039,14$scorestr\x0f");
+  $self->say(channel => $channel, body => "\x0312$scorestr\x0f");
   print STDOUT $scorestr; 
 }
 
@@ -169,11 +169,11 @@ sub tick{
   my $self = shift;  # first arg is self
   if($playing){  # we are playing a game, otherwise this was errant, like in the first 5 seconds of the bot running.
     if(!%roundexps){
-      $self->say(channel=>$channel, body=>"No users submitted regular expressions! Pausing game - use !start to resume.");
+      $self->say(channel=>$channel, body=>"No users submitted regular expressions! Pausing game - use \x02!start\x02 to resume.");
       $playing = 0;
     }
     foreach my $i (keys %roundexps){
-      $self->say(channel=>$channel, body=>"User $i submitted \x02$roundexps{$i}\x02 - worth $roundscores{$i} points.");  # just return nick: regex  into the channel.
+      $self->say(channel=>$channel, body=>"User $i submitted \x02$roundexps{$i}\x02 - worth \x02$roundscores{$i}\x02 points.");  # just return nick: regex  into the channel.
       if(!exists $gamescores{$i}){
         $gamescores{ $i } = $roundscores{$i};
       } else {
@@ -188,16 +188,23 @@ sub tick{
 
 sub checkwin{
   my $self = shift;
-  my $reset = 0;
+  my $winner = 0;
+  my $winscore = 0;
   foreach my $key (keys %gamescores){
     if($gamescores{ $key } >= 100){
-      $self->say(channel=>$channel, body=>"We have a winner! Congratulations to $key, for winning with $gamescores{ $key } points!");
-      $playing = 0;
-      $reset = 1;
+      if($gamescores{ $key } > $winscore){
+        $winscore = $gamescores{ $key };
+        $winner = $key;
+      } elsif($gamescores{$key} == $winscore){
+        $self->say(chaannel=>$channel, body=>"Seems we have \x02a tie!\x02 Let's play until the tie is broken.");
+        return undef;
+      }
     }
   }
-  if($reset){
+  if($winner){
     %gamescores = ();
+    $self->say(channel=>$channel, body=>"We have a winner! Congratulations to \x02$key\x02, for winning with \x02$gamescores{ $key }\x02 points!");
+    $playing = 0;
   }
 }
 
