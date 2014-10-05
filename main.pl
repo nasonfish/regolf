@@ -192,9 +192,9 @@ sub checkwin{
     if($gamescores{ $key } >= 100){
       $self->say(channel=>$channel, body=>"We have a winner! Congratulations to $key, for winning with $gamescores{ $key } points!");
       $playing = 0;
-      %gamescores = ();
     }
   }
+  %gamescores = ();
 }
 
 my $bot = Regolf->new(
