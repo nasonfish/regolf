@@ -139,7 +139,6 @@ sub said{
       $score = 0;
     }
     $msg =~ s/..$//;
-    foreach my $w
     $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score): $msg"); # who is the name of the person while channel is "msg" for pms
     
     if(!exists $roundscores{$message->{who}} or $roundscores{$message->{who}} <= $score){
