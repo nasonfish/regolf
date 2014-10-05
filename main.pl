@@ -156,7 +156,7 @@ sub newRound{
   %roundscores = ();
   %roundexps = ();
   $points = length(join("", @good) . join("", @bad));
-  $points = $points < 30 ? 30 : $points;
+  $points = $points < 40 ? 40 : $points;
   $self->say(channel => $channel, body => "\x0305Please match: \x02\x0303" . join(", ", @good) . "\x0f\x02");  # . concatenates, join joins it as an array spliced together with ", "
   $self->say(channel => $channel, body => "\x0305Do not match: \x0304\x02" . join(", ", @bad) . "\x0f\x02");
   $self->say(channel => $channel, body => "You have 120 seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
@@ -190,6 +190,7 @@ sub checkwin{
     if($gamescores{ $key } >= 100){
       $self->say(channel=>$channel, body=>"We have a winner! Congratulations to $key, for winning with $gamescores{ $key } points!");
       $playing = 0;
+      %gamescores = ();
     }
   }
 }
