@@ -9,61 +9,128 @@ use Bot::BasicBot;
 use List::Util qw( shuffle );
 
 my $wordlist = '/usr/share/dict/words'; # This is our big dictionary of words to pick from. ideally we will make the words similar in some way.
-my @words = ();
 
-my @filters = ('(\w{3})\1');
+my @good = ();
+my @bad = ();  # two lists
 
-open WORDS, '<', $wordlist or die "Cannot open $wordlist:$!";
-while(my $word = <WORDS>){
-  chomp($word);
-  my $f = $filters[rand @filters];
-  push @words, $word if $word =~ /^[a-z]+$/ and $word =~ /$f/;  # filter out names with capitol letters as well as apostrophes and stuff; apply a certain filter
+my @filters = ('(\w{3}).*\1', '^_0.*_0$', '^[qwertyuiopasdfghjkl]+$', '^[a-f]+$', '^[m-r]+$', '=', '_0_1_2', '^(.)(.)(.?)(.?)(.?)(.?).?\6\5\4\3\2\1$');
+my @characters = ("a".."z");
+
+sub wordset {
+  my ($self, $amt) = @_;
+  my @words = ();
+  while(@words <= ($amt * 2)){
+    @words = ();
+    my $f = $filters[rand @filters];
+    if( $f eq "="){
+      my $num = int(rand(7)+2);
+      print STDOUT $num;
+      for my $n(0..100){
+        push @words, $n if $n % $num == 0;
+      }
+    } else {
+      for my $j (0..9) {
+        my $letter = $characters[rand @characters];
+        $f =~ s/_$j/$letter/g;
+      }
+      print STDOUT "$f\n";
+      open WORDS, '<', $wordlist or die "Cannot open $wordlist:$!";
+      while(my $word = <WORDS>){
+        chomp($word);
+        push @words, $word if $word =~ /^[a-z]{2,}$/ and $word =~ /$f/;  # filter out names with capitol letters as well as apostrophes and stuff; apply a certain filter
+      }
+      close WORDS;
+    }
+  }
+  return @words;
 }
-close WORDS;
+sub wordgen {
+  my $self = shift;
+  print STDOUT "Generating words.\n";
+  my $amt = int(rand(5)+3); # from 3-8 words
+  if(int(rand(15)) == 10){
+    print STDOUT "Special round! Using two different sets this time.";
+    my @words = $self->wordset($amt);
+    @words = shuffle(@words);
+    @good = @words[0 .. ($amt-1)]; # get the first <x> words
+    @words = $self->wordset($amt);
+    @words = shuffle(@words);
+    @bad = @words[0 .. ($amt-1)];
+    for my $bd (@bad){
+      @good = grep {$_ ne $bd} @good;
+    }
+  } else {
+    my @words = $self->wordset($amt * 2);
+    @words = shuffle(@words);
+    @good = @words[0 .. ($amt - 1)];
+    @bad = @words[$amt .. (($amt * 2) - 1)];
+  }
+}
 
 
 my $channel = "#regolf";
 my $playing = 0;
 
 my $points = 0;
-my @good = ();
-my @bad = ();  # two lists
 
 my %roundscores = ();  # hashes
 my %gamescores = ();
 my %roundexps = ();
 
+sub scores{
+  my $self = shift;
+  my $scorestr = "";
+  for my $key(keys %gamescores){
+    $scorestr .= "$key: $gamescores{$key}, ";
+  }
+  $scorestr =~ s/..$//;
+  $scorestr =~ s/^$/No scores have been recorded yet./;
+  $self->say(channel => $channel, body => "\x039,14$scorestr\x0f");
+  print STDOUT $scorestr; 
+}
+
 sub said{
   my($self, $message) = @_;  # the arguments of this function include the self object and the message, which contains all the information we need about the event.
+  print STDOUT $message;
   if($message->{channel} eq $channel and not $playing and $message->{body} =~ /^!start/){  # channel is correct, we're not already playing, the message starts with !start
     $playing = 1;
     $self->say(channel => $channel, body => "Beginning new regex golf game.");
     $self->newRound();
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!pause/){
     $playing = 0;
-    $self->say(channel => $channel, body => "Pausing current regex golf game.")
+    $self->say(channel => $channel, body => "Pausing current regex golf game.");
+  } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!haltround/ and $message->{who} eq "nasonfish"){
+    $self->schedule_tick(1);
+  } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!scores/){
+    $self->scores();
   } elsif($message->{channel} eq "msg" and $playing == 1){  # in pm, we /are/ playing
     my $score = $points;
     my @goodmiss = ();
     my @badmiss = ();
+    print STDOUT "Recieved $message->{body} by $message->{who}.\n";
     foreach my $i (@good){
       if($i !~ /$message->{body}/){
-        $score -= length($i);
         push @goodmiss, $i;
+        print STDOUT "Missed $i\n";
       }
     }
     foreach my $i (@bad){
       if($i =~ /$message->{body}/){
-        $score -= length($i);
         push @badmiss, $i;
+        print STDOUT "Hit $i\n";
       }
     }
-    $score -= length($message->{body});
+    $score *= 2**(-(@goodmiss + @badmiss));
+    $score -= 2 * length($message->{body});
     $score = $score < 0 ? 0 : $score;
-    $self->say(who => $message->{who}, channel=>"msg", body=>"$message->{body} " . (length(@goodmiss) == 0 ? "matches all positive strings" : "does not match " . join(", ", @goodmiss)) . (length(@badmiss) == 0 ? " and does not match any negative strings." : " and does match " . join(",", @badmiss))); # who is the name of the person while channel is "msg" for pms
+    if(@good == @goodmiss || @bad == @badmiss){
+      $score = 0;
+    }
+    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score) " . (!@goodmiss ? "matches \x0303all positive strings\x03" : ("does not match positive strings \x0303" . join(", ", @goodmiss) . "\x0f")) . (!@badmiss ? ", and does not match any \x0304negative strings\x0304." : (" and does match negative strings \x0304" . join(", ", @badmiss) . "\x0f"))); # who is the name of the person while channel is "msg" for pms
     $roundexps{ $message->{who} } = $message->{body};
     $roundscores{ $message->{who} } = $score;
   }
+  return undef;
 }
 
 sub connected{
@@ -75,14 +142,17 @@ sub connected{
 }
 
 sub newRound{
-  my $self = shift; # first argument, since we call $self->...
-  my @t_words = shuffle(@words);  # our word list we collected earlier contains the words. shuffled with List::Util
-  my $amt = int(rand(7)+3); # from 3-9 words
-  @good = @t_words[0 .. $amt]; # get the first <x> words
-  @bad = @t_words[($amt+1) .. (($amt*2)+1)];  # and the second <x> words, so there's an equal amount.
-  $points = length(join("", @good)) * 2;
-  $self->say(channel => $channel, body => "Please match: " . join(", ", @good));  # . concatenates, join joins it as an array spliced together with ", "
-  $self->say(channel => $channel, body => "Do not match: " . join(", ", @bad));
+  my $self = shift;
+  if(not $playing){
+    return;
+  }
+  $self->wordgen();
+  %roundscores = ();
+  %roundexps = ();
+  $points = length(join("", @good) . join("", @bad));
+  $points = $points < 30 ? 30 : $points;
+  $self->say(channel => $channel, body => "\x0305Please match: \x02\x0303" . join(", ", @good) . "\x0f\x02");  # . concatenates, join joins it as an array spliced together with ", "
+  $self->say(channel => $channel, body => "\x0305Do not match: \x0304\x02" . join(", ", @bad) . "\x0f\x02");
   $self->say(channel => $channel, body => "You have 120 seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
   $self->schedule_tick(120);  # sixty seconds later, we call tick{}. this was actually called five seconds after the bot started, but that should have been ignored. (TODO make that better, if the game starts too soon.)
 }
@@ -90,10 +160,31 @@ sub newRound{
 sub tick{
   my $self = shift;  # first arg is self
   if($playing){  # we are playing a game, otherwise this was errant, like in the first 5 seconds of the bot running.
-    foreach my $i (keys %roundexps){
-      $self->say(channel=>$channel, body=>"User $i submitted /$roundexps{$i}/ - worth $roundscores{$i} points.");  # just return nick: regex  into the channel.
+    if(!%roundexps){
+      $self->say(channel=>$channel, body=>"No users submitted regular expressions! Pausing game - use !start to resume.");
+      $playing = 0;
     }
+    foreach my $i (keys %roundexps){
+      $self->say(channel=>$channel, body=>"User $i submitted \x02$roundexps{$i}\x02 - worth $roundscores{$i} points.");  # just return nick: regex  into the channel.
+      if(!exists $gamescores{$i}){
+        $gamescores{ $i } = $roundscores{$i};
+      } else {
+        $gamescores{ $i } += $roundscores{$i};
+      }
+    }
+    $self->scores();
+    $self->checkwin();
     $self->newRound();
+  }
+}
+
+sub checkwin{
+  my $self = shift;
+  foreach my $key (keys %gamescores){
+    if($gamescores{ $key } >= 200){
+      $self->say(channel=>$channel, body=>"We have a winner! Congratulations to $key, for winning with $gamescores{ $key } points!");
+      $playing = 0;
+    }
   }
 }
 
