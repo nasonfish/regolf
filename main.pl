@@ -116,17 +116,21 @@ sub said{
       $self->notice(who => $message->{who}, channel=>"msg", body => "This regular expression is invalid - $@");
       return undef;
     }
+    my $msg = "Positive: ";
     foreach my $i (@good){
       if($i !~ /$message->{body}/){
         push @goodmiss, $i;
         print STDOUT "Missed $i\n";
-      }
+        $msg .= "\x0303$i\x0f, ";
+      } else { $msg .= "$i, "; }
     }
+    $msg =~ s/..$/ | Negative: /;
     foreach my $i (@bad){
       if($i =~ /$message->{body}/){
         push @badmiss, $i;
         print STDOUT "Hit $i\n";
-      }
+        $msg .= "\x0304$i\x0f, ";
+      } else { $msg .= "$i, "; }
     }
     $score *= 1.5**(-(@goodmiss + @badmiss));
     $score -= 3 * length($message->{body});
@@ -134,8 +138,11 @@ sub said{
     if(@good == @goodmiss || @bad == @badmiss){
       $score = 0;
     }
-    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score) " . (!@goodmiss ? "matches \x0303all positive strings\x03" : ("does not match positive strings \x0303" . join(", ", @goodmiss) . "\x0f")) . (!@badmiss ? ", and does not match any \x0304negative strings\x0304." : (" and does match negative strings \x0304" . join(", ", @badmiss) . "\x0f"))); # who is the name of the person while channel is "msg" for pms
-    if(!exists $roundscores{$message->{who}} or $roundscores{$message->{who}} < $score){
+    $msg =~ s/..$//;
+    foreach my $w
+    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score): $msg"); # who is the name of the person while channel is "msg" for pms
+    
+    if(!exists $roundscores{$message->{who}} or $roundscores{$message->{who}} <= $score){
       $roundexps{ $message->{who} } = $message->{body};
       $roundscores{ $message->{who} } = $score;
     }
