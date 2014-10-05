@@ -108,6 +108,12 @@ sub said{
     my @goodmiss = ();
     my @badmiss = ();
     print STDOUT "Recieved $message->{body} by $message->{who}.\n";
+    my $valid = eval { qr/$message->{body}/ };
+    if($@){
+      $@ =~ s/;.*$|[\r\n]//g;
+      $self->notice(who => $message->{who}, channel=>"msg", body => "This regular expression is invalid - $@");
+      return undef;
+    }
     foreach my $i (@good){
       if($i !~ /$message->{body}/){
         push @goodmiss, $i;
