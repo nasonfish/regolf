@@ -121,16 +121,16 @@ sub said{
       if($i !~ /$message->{body}/){
         push @goodmiss, $i;
         print STDOUT "Missed $i\n";
-        $msg .= "\x0303$i\x0f, ";
-      } else { $msg .= "$i, "; }
+        $msg .= "$i, ";
+      } else { $msg .= "\x0303$i\x0f, "; }
     }
     $msg =~ s/..$/ | Negative: /;
     foreach my $i (@bad){
       if($i =~ /$message->{body}/){
         push @badmiss, $i;
         print STDOUT "Hit $i\n";
-        $msg .= "\x0304$i\x0f, ";
-      } else { $msg .= "$i, "; }
+        $msg .= "$i, ";
+      } else { $msg .= "\x0304$i\x0f, "; }
     }
     $score *= 1.5**(-(@goodmiss + @badmiss));
     $score -= 3 * length($message->{body});
