@@ -82,7 +82,7 @@ sub scores{
   my $self = shift;
   my $scorestr = "";
   for my $key(keys %gamescores){
-    $scorestr .= "\x10$key: \x07$gamescores{$key}, ";
+    $scorestr .= "\x0310$key: \x0307$gamescores{$key}, ";
   }
   $scorestr =~ s/..$//;
   $scorestr =~ s/^$/No scores have been recorded yet./;
@@ -169,9 +169,10 @@ sub newRound{
   $points = $points < 40 ? 40 : $points;
   $self->say(channel => $channel, body => "\x0305Please match: \x02\x0303" . join(", ", @good) . "\x0f\x02");  # . concatenates, join joins it as an array spliced together with ", "
   $self->say(channel => $channel, body => "\x0305Do not match: \x0304\x02" . join(", ", @bad) . "\x0f\x02");
-  $self->say(channel => $channel, body => "You have 120 seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
+  my $time = int(80 + (.25 * $points));
+  $self->say(channel => $channel, body => "You have $time seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
   $hurryup = 0;
-  $self->schedule_tick(105);
+  $self->schedule_tick($time);
 }
 
 sub tick{
@@ -180,6 +181,7 @@ sub tick{
     if(!$hurryup){
       $self->say(channel=>$channel, body=>"Hurry up! You only have 15 seconds left to finish your expression!");
       $hurryup = 1;
+      $self->schedule_tick(15);
       return undef;
     }
     if(!%roundexps){
