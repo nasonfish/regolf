@@ -82,7 +82,7 @@ sub scores{
   my $self = shift;
   my $scorestr = "";
   for my $key(keys %gamescores){
-    $scorestr .= "$key: $gamescores{$key}, ";
+    $scorestr .= "\x10$key: \x07$gamescores{$key}, ";
   }
   $scorestr =~ s/..$//;
   $scorestr =~ s/^$/No scores have been recorded yet./;
