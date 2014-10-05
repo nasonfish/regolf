@@ -188,13 +188,17 @@ sub tick{
 
 sub checkwin{
   my $self = shift;
+  my $reset = 0;
   foreach my $key (keys %gamescores){
     if($gamescores{ $key } >= 100){
       $self->say(channel=>$channel, body=>"We have a winner! Congratulations to $key, for winning with $gamescores{ $key } points!");
       $playing = 0;
+      $reset = 1;
     }
   }
-  %gamescores = ();
+  if($reset){
+    %gamescores = ();
+  }
 }
 
 my $bot = Regolf->new(
