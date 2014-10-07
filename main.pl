@@ -4,7 +4,6 @@ use warnings;
 use strict;
 package Regolf;
 use base qw(Bot::BasicBot);
-
 use Bot::BasicBot;
 use List::Util qw( shuffle );
 
@@ -17,6 +16,8 @@ my @filters = ('(\w{3}).*\1', '^_0.*_0$', '^[qwertyuiopasdfghjkl]+$', '^[a-f]+$'
 my @characters = ("a".."z");
 my $hurryup = 0; # we set two timers, one for the hurry up message, so this flicks back and forth between 0 and 1 depending on if we're waiting to end the round (1) or not (0)
 
+
+
 sub wordset {
   my ($self, $amt) = @_;
   my @words = ();
@@ -26,7 +27,7 @@ sub wordset {
     if( $f eq "="){
       my $num = int(rand(7)+2);
       print STDOUT $num;
-      for my $n(0..100){
+      for my $n(1000..100000){
         push @words, $n if $n % $num == 0;
       }
     } else {
