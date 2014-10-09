@@ -21,3 +21,22 @@ sudo apt-get install libbot-basicbot-perl
 ```
 
 This should install all our dependancies.
+
+Now, we just need to update our version of Bot-BasicBot.
+
+We can do this by grabbing it right from search.cpan.org.
+
+```bash
+wget http://search.cpan.org/CPAN/authors/id/H/HI/HINRIK/Bot-BasicBot-0.89.tar.gz
+tar xzf Bot-Basicbot-0.89.tar.gz
+cd Bot-Basicbot*
+perl Makefile.PL
+make
+sudo make install
+```
+
+Now we can run the bot!
+
+```bash
+perl main.pl
+```
