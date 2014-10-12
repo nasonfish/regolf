@@ -22,7 +22,7 @@ while(my $admin = <$a_file>){
   chomp($admin);
   push @admins, $admin;
 }
-close $file;
+close $a_file;
 sub wordset {
   my ($self, $amt) = @_;
   my @words = ();
