@@ -16,8 +16,13 @@ my @filters = ('(\w{3}).*\1', '^_0.*_0$', '^[qwertyuiopasdfghjkl]+$', '^[a-f]+$'
 my @characters = ("a".."z");
 my $hurryup = 0; # we set two timers, one for the hurry up message, so this flicks back and forth between 0 and 1 depending on if we're waiting to end the round (1) or not (0)
 
-
-
+my @admins = ();
+open my $a_file, '<', 'admins.txt';
+while(my $admin = <$a_file>){
+  chomp($admin);
+  push @admins, $admin;
+}
+close $file;
 sub wordset {
   my ($self, $amt) = @_;
   my @words = ();
@@ -101,7 +106,7 @@ sub said{
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!pause/){
     $playing = 0;
     $self->say(channel => $channel, body => "Pausing current regex golf game.");
-  } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!haltround/ and $message->{who} eq "nasonfish"){
+  } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!haltround/ and $message->{who} ~~ @admins){
     $hurryup = 1;
     $self->schedule_tick(1);
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!scores/){
@@ -157,6 +162,7 @@ sub connected{
   my $pwd = <$file>;
   chomp($pwd);
   $self->say(who => "NickServ", channel => "msg", "body" => "IDENTIFY regolf $pwd");  # once we're connected we identify with chanserv with the password in pwd.txt
+  close $file;
 }
 
 sub newRound{
