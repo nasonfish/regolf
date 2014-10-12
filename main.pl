@@ -110,6 +110,7 @@ sub said{
     my $score = $points;
     my @goodmiss = ();
     my @badmiss = ();
+    $message->{body} =~ s/\(\?R\)|\\p//;
     print STDOUT "Recieved $message->{body} by $message->{who}.\n";
     my $valid = eval { qr/$message->{body}/ };
     if($@){
