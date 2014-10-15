@@ -111,7 +111,7 @@ sub said{
     $self->schedule_tick(1);
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!scores/){
     $self->scores();
-  } elsif($message->{channel} eq "msg" and $playing == 1){  # in pm, we /are/ playing
+  } elsif($message->{channel} eq "msg" and $playing == 1 and $message->{who} !~ /Serv$/){  # in pm, we /are/ playing, it's not a service
     my $score = $points;
     my @goodmiss = ();
     my @badmiss = ();
