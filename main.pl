@@ -82,6 +82,7 @@ sub wordgen {
 
 
 my $channel = "#regolf";
+my $nick = "regolf";
 my $playing = 0;
 
 my $points = 0;
@@ -134,7 +135,7 @@ sub said{
       if($i !~ /$message->{body}/){
         push @goodmiss, $i;
         print STDOUT "Missed $i\n";
-        $msg .= "$i, ";
+        $msg .= "\x0314$i\x0f, ";
       } else { $msg .= "\x0303$i\x0f, "; }
     }
     $msg =~ s/..$/ | Negative: /;
@@ -142,8 +143,8 @@ sub said{
       if($i =~ /$message->{body}/){
         push @badmiss, $i;
         print STDOUT "Hit $i\n";
-        $msg .= "$i, ";
-      } else { $msg .= "\x0304$i\x0f, "; }
+        $msg .= "\x0304$i\x0f, ";
+      } else { $msg .= "\x0314$i\x0f, "; }
     }
     $score *= 1.5**(-(@goodmiss + @badmiss));
     $score -= 3 * length($message->{body});
@@ -184,7 +185,7 @@ sub newRound{
   $self->say(channel => $channel, body => "\x0305Please match: \x02\x0303" . join(", ", @good) . "\x0f\x02");  # . concatenates, join joins it as an array spliced together with ", "
   $self->say(channel => $channel, body => "\x0305Do not match: \x0304\x02" . join(", ", @bad) . "\x0f\x02");
   my $time = int(80 + (.25 * $points));
-  $self->say(channel => $channel, body => "You have $time seconds; Private message me your regular expression using \x02/msg regolf expression\x02!");
+  $self->say(channel => $channel, body => "You have $time seconds; Private message me your regular expression(s) using \x02/msg $nick expression\x02!");
   $hurryup = 0;
   $self->schedule_tick($time - 15);
 }
@@ -243,9 +244,8 @@ my $bot = Regolf->new(
   port => 6697,  # ssl port
   ssl => 1,  # true-y value
   channels => [$channel],  # the channel was specified at the top of the file
-  nick => "regolf",
+  nick => $nick, # the name the bot should use specified at the top of the file
   username => "regolf",
   name => "Perl Regex Golf IRC Bot",  # todo either ctcp the link to the source or put it here
   flood => 1  # disables flood protection, that sends a message every 3 seconds instead of bursting. this should be required, I'll look into making this work well but work quicker.
 )->run(); # go!
-
