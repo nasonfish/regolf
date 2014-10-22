@@ -12,7 +12,13 @@ my $wordlist = '/usr/share/dict/words'; # This is our big dictionary of words to
 my @good = ();
 my @bad = ();  # two lists
 
-my @filters = ('(\w{3}).*\1', '^_0.*_0$', '^[qwertyuiopasdfghjkl]+$', '^[a-f]+$', '=', '_0_1_2', '^(.)(.)(.?)(.?)(.?)(.?).?\6\5\4\3\2\1$');
+my $usefilters = 0;
+my @filters = ();
+if($usefilters){
+  @filters = ('(\w{3}).*\1', '^_0.*_0$', '^[qwertyuiopasdfghjkl]+$', '^[a-f]+$', '=', '_0_1_2', '^(.)(.)(.?)(.?)(.?)(.?).?\6\5\4\3\2\1$');
+} else {
+  @filters = ('.');
+}
 my @characters = ("a".."z");
 my $hurryup = 0; # we set two timers, one for the hurry up message, so this flicks back and forth between 0 and 1 depending on if we're waiting to end the round (1) or not (0)
 
@@ -55,7 +61,7 @@ sub wordgen {
   my $self = shift;
   print STDOUT "Generating words.\n";
   my $amt = int(rand(5)+3); # from 3-8 words
-  if(int(rand(15)) == 10){
+  if(int(rand(15)) == 10 && $usefilters){
     print STDOUT "Special round! Using two different sets this time.";
     my @words = $self->wordset($amt);
     @words = shuffle(@words);
