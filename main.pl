@@ -106,7 +106,7 @@ sub scores{
 sub said{
   my($self, $message) = @_;  # the arguments of this function include the self object and the message, which contains all the information we need about the event.
   print STDOUT $message;
-  if($message->{channel} eq $channel and not $playing and $message->{body} =~ /^!start(?: !T ([a-zA-Z-]+))?$/){  # channel is correct, we're not already playing, the message starts with !start
+  if($message->{channel} eq $channel and not $playing and $message->{body} =~ /^!start(?: !L ([a-zA-Z-]+))?$/){  # channel is correct, we're not already playing, the message starts with !start
     $playing = 1;
     if($1){
       $wordlist = "/usr/share/dict/" . $1;
