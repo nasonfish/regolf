@@ -7,6 +7,8 @@ use base qw(Bot::BasicBot);
 use Bot::BasicBot;
 use List::Util qw( shuffle );
 
+require 'db.pl';
+db_init();
 my $wordlist = '/usr/share/dict/words'; # This is our big dictionary of words to pick from. ideally we will make the words similar in some way.
 
 my @good = ();
@@ -32,9 +34,10 @@ close $a_file;
 sub wordset {
   my ($self, $amt) = @_;
   my @words = ();
+  my $f = undef;
   while(@words <= ($amt * 2)){
     @words = ();
-    my $f = $filters[rand @filters];
+    $f = $filters[rand @filters];
     if( $f eq "="){
       my $num = int(rand(7)+2);
       print STDOUT $num;
@@ -55,7 +58,7 @@ sub wordset {
       close WORDS;
     }
   }
-  return @words;
+  return (@words, $f);
 }
 sub wordgen {
   my $self = shift;
@@ -63,7 +66,7 @@ sub wordgen {
   my $amt = int(rand(5)+3); # from 3-8 words
   if(int(rand(15)) == 10 && $usefilters){
     print STDOUT "Special round! Using two different sets this time.";
-    my @words = $self->wordset($amt);
+    my (@words, $f) = $self->wordset($amt);
     @words = shuffle(@words);
     @good = @words[0 .. ($amt-1)]; # get the first <x> words
     @words = $self->wordset($amt);
@@ -72,11 +75,13 @@ sub wordgen {
     for my $bd (@bad){
       @good = grep {$_ ne $bd} @good;
     }
+    db_round_init($f, @good, @bad);
   } else {
-    my @words = $self->wordset($amt * 2);
+    my (@words, $f) = $self->wordset($amt * 2);
     @words = shuffle(@words);
     @good = @words[0 .. ($amt - 1)];
     @bad = @words[$amt .. (($amt * 2) - 1)];
+    db_round_init($f, @good, @bad);
   }
 }
 
@@ -112,6 +117,7 @@ sub said{
       $wordlist = "/usr/share/dict/" . $1;
     }
     $self->say(channel => $channel, body => "Beginning new regex golf game.");
+    db_game_init();
     $self->newRound();
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!pause/){
     $playing = 0;
@@ -158,7 +164,7 @@ sub said{
       $score = 0;
     }
     $msg =~ s/..$//;
-    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score/\x033" . @good - @goodmiss . "\x0f/\x034" . @bad - @badmiss . "\x0f): $msg"); # who is the name of the person while channel is "msg" for pms
+    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score/\x0303" . (@good - @goodmiss) . "\x0f/\x0304" . (@bad - @badmiss) . "\x0f): $msg"); # who is the name of the person while channel is "msg" for pms
     
     if(!exists $roundscores{$message->{who}} or $roundscores{$message->{who}} <= $score){
       $roundexps{ $message->{who} } = $message->{body};
@@ -216,6 +222,7 @@ sub tick{
         $gamescores{ $i } += $roundscores{$i};
       }
     }
+    db_round_end(%roundscores, %roundexps);
     $self->scores();
     $self->checkwin();
     $self->newRound();
@@ -243,6 +250,7 @@ sub checkwin{
     return undef;
   }
   if($winner){
+    db_game_end(%gamescores, $winner);
     %gamescores = ();
     $self->say(channel=>$channel, body=>"We have a winner! Congratulations to \x02$winner\x02, for winning with \x02$winscore\x02 points!");
     $playing = 0;
