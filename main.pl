@@ -122,7 +122,7 @@ sub said{
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!scores/){
     $self->scores();
   } elsif($message->{body} =~ /^!key/){
-    $self->say(channel => $channel, body => "r(e)?ge[x] (score/\x033good hit amount\x0f/\x034bad miss amount\x0f): Positive: \x033hit\x0f, \x033words\x0f, \x0314missed\x0f, \x0314words\x0f | Negative: \x0313missed\x0f, \x0313words\x0f, \x034hit\x0f, \x034words\x0f");
+    $self->say(channel => $channel, body => "r(e)?ge[x] (score/\x033good hit amount\x0f/\x034bad miss amount\x0f): Positive: \x033hit\x0f, \x033words\x0f, \x0314missed\x0f, \x0314words\x0f | Negative: \x0314missed\x0f, \x0314words\x0f, \x034hit\x0f, \x034words\x0f");
   } elsif($message->{channel} eq "msg" and $playing == 1 and $message->{who} !~ /Serv$/){  # in pm, we /are/ playing, it's not a service
     my $score = $points;
     my @goodmiss = ();
