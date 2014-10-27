@@ -85,7 +85,6 @@ sub wordgen {
   }
 }
 
-
 my $channel = "#regolf";
 my $nick = "regolf";
 my $playing = 0;
@@ -179,7 +178,7 @@ sub connected{
   open my $file, '<', 'pwd.txt';
   my $pwd = <$file>;
   chomp($pwd);
-  $self->say(who => "NickServ", channel => "msg", "body" => "IDENTIFY regolf $pwd");  # once we're connected we identify with chanserv with the password in pwd.txt
+  $self->say(who => "NickServ", channel => "msg", "body" => "IDENTIFY regolf $pwd");  # once we're connected we identify with NickServ with the password in pwd.txt
   close $file;
 }
 
