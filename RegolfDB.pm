@@ -1,13 +1,14 @@
 #!/usr/bin/perl
 
-package Regolf;
+package RegolfDB;
 use strict;
 use warnings;
 use DBI;
+require Exporter;
 
 our @ISA = qw( Exporter );
-our @EXPORT_OK = qw( db_init, db_game_init, db_round_init, db_round_end, db_game_end );
-our @EXPORT = qw( db_init, db_game_init, db_round_init, db_round_end, db_game_end );
+our @EXPORT_OK = qw( db_init db_game_init db_round_init db_round_end db_game_end );
+our @EXPORT = qw( db_init db_game_init db_round_init db_round_end db_game_end );
 
 our $db = DBI->connect("dbi:SQLite:dbname=data.db","","") or die $DBI::errstr;
 our $gameid = undef;
@@ -16,13 +17,13 @@ our $roundid = undef;
 sub db_init {
   my $stmnt = $db->do("CREATE TABLE IF NOT EXISTS games (id INTEGER AUTO_INCREMENT PRIMARY KEY, ts INTEGER, winner VARCHAR(64))");
   $stmnt = $db->do("CREATE TABLE IF NOT EXISTS game_scores (id INTEGER AUTO_INCREMENT PRIMARY KEY, game_id INTEGER, user VARCHAR(64), score INTEGER, FOREIGN KEY(game_id) REFERENCES games(id))");
-  $stmnt = $db->do("CREATE TABLE IF NOT EXISTS round (id INTEGER AUTO_INCREMENT PRIMARY KEY, game_id INTEGER, regex VARCHAR(128), FOREIGN_KEY(game_id) REFERENCES games(id))");
-  $stmnt = $db->do("CREATE TABLE IF NOT EXISTS round_words (id INTEGER AUTO_INCREMENT PRIMARY KEY, round_id INTEGER, word VARCHAR(64), FOREIGN KEY(round_id) REFERENCES round(id))");
+  $stmnt = $db->do("CREATE TABLE IF NOT EXISTS round (id INTEGER AUTO_INCREMENT PRIMARY KEY, game_id INTEGER, regex VARCHAR(128), FOREIGN KEY(game_id) REFERENCES games(id))");
+  $stmnt = $db->do("CREATE TABLE IF NOT EXISTS round_words (id INTEGER AUTO_INCREMENT PRIMARY KEY, round_id INTEGER, word VARCHAR(64), good BOOLEAN, FOREIGN KEY(round_id) REFERENCES round(id))");
   $stmnt = $db->do("CREATE TABLE IF NOT EXISTS round_submissions (id INTEGER AUTO_INCREMENT PRIMARY KEY, round_id INTEGER, regex VARCHAR(128), user VARCHAR(64), score INTEGER, FOREIGN KEY(round_id) REFERENCES round(id))")
 }
 
 sub db_game_init {
-  $db->do("INSERT INTO games (time) VALUES (strftime('%s', 'now'))");
+  $db->do("INSERT INTO games (ts) VALUES (strftime('%s', 'now'))");
   $gameid = $db->last_insert_id("","","games","");
   print STDOUT "Last insert id is $gameid.\n";
 }
@@ -54,3 +55,4 @@ sub db_game_end {
   }
 }
 
+1;

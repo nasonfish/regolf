@@ -6,8 +6,8 @@ package Regolf;
 use base qw(Bot::BasicBot);
 use Bot::BasicBot;
 use List::Util qw( shuffle );
+use RegolfDB qw( db_init db_game_init db_round_init db_round_end db_game_end );
 
-require 'db.pl';
 db_init();
 my $wordlist = '/usr/share/dict/words'; # This is our big dictionary of words to pick from. ideally we will make the words similar in some way.
 
@@ -75,13 +75,13 @@ sub wordgen {
     for my $bd (@bad){
       @good = grep {$_ ne $bd} @good;
     }
-    db_round_init($f, @good, @bad);
+    db_round_init($f, \@good, \@bad);
   } else {
     my (@words, $f) = $self->wordset($amt * 2);
     @words = shuffle(@words);
     @good = @words[0 .. ($amt - 1)];
     @bad = @words[$amt .. (($amt * 2) - 1)];
-    db_round_init($f, @good, @bad);
+    db_round_init($f, \@good, \@bad);
   }
 }
 
@@ -222,7 +222,7 @@ sub tick{
         $gamescores{ $i } += $roundscores{$i};
       }
     }
-    db_round_end(%roundscores, %roundexps);
+    db_round_end(\%roundscores, \%roundexps);
     $self->scores();
     $self->checkwin();
     $self->newRound();
@@ -250,7 +250,7 @@ sub checkwin{
     return undef;
   }
   if($winner){
-    db_game_end(%gamescores, $winner);
+    db_game_end(\%gamescores, $winner);
     %gamescores = ();
     $self->say(channel=>$channel, body=>"We have a winner! Congratulations to \x02$winner\x02, for winning with \x02$winscore\x02 points!");
     $playing = 0;
