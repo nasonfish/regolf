@@ -221,16 +221,21 @@ sub checkwin{
   my $self = shift;
   my $winner = 0;
   my $winscore = 0;
+  my $tie = 0;
   foreach my $key (keys %gamescores){
     if($gamescores{ $key } >= 100){
       if($gamescores{ $key } > $winscore){
         $winscore = $gamescores{ $key };
         $winner = $key;
+        $tie = 0;
       } elsif($gamescores{$key} == $winscore){
-        $self->say(chaannel=>$channel, body=>"Seems we have \x02a tie!\x02 Let's play until the tie is broken.");
-        return undef;
+        $tie = 1;
       }
     }
+  }
+  if($tie){
+    $self->say(channel=>$channel, body=>"Seems we have \x02a tie!\x02 Let's play until the tie is broken.");
+    return undef;
   }
   if($winner){
     %gamescores = ();
