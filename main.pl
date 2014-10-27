@@ -121,6 +121,8 @@ sub said{
     $self->schedule_tick(1);
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!scores/){
     $self->scores();
+  } elsif($message->{body} =~ /^!key/){
+    $self->say(channel => $channel, body => "r(e)?ge[x] (score/\x033good hit amount\x0f/\x034bad miss amount\x0f): Positive: \x033hit\x0f, \x033words\x0f, \x0314missed\x0f, \x0314words\x0f | Negative: \x0313missed\x0f, \x0313words\x0f, \x034hit\x0f, \x034words\x0f");
   } elsif($message->{channel} eq "msg" and $playing == 1 and $message->{who} !~ /Serv$/){  # in pm, we /are/ playing, it's not a service
     my $score = $points;
     my @goodmiss = ();
@@ -156,7 +158,7 @@ sub said{
       $score = 0;
     }
     $msg =~ s/..$//;
-    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score): $msg"); # who is the name of the person while channel is "msg" for pms
+    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score/\x033" . @good - @goodmiss . "\x0f/\x034" . @bad - @badmiss . "\x0f): $msg"); # who is the name of the person while channel is "msg" for pms
     
     if(!exists $roundscores{$message->{who}} or $roundscores{$message->{who}} <= $score){
       $roundexps{ $message->{who} } = $message->{body};
