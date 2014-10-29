@@ -58,7 +58,7 @@ sub wordset {
       close WORDS;
     }
   }
-  return (@words, $f);
+  return (\@words, $f);
 }
 sub wordgen {
   my $self = shift;
@@ -66,7 +66,8 @@ sub wordgen {
   my $amt = int(rand(5)+3); # from 3-8 words
   if(int(rand(15)) == 10 && $usefilters){
     print STDOUT "Special round! Using two different sets this time.";
-    my (@words, $f) = $self->wordset($amt);
+    my ($word_ref, $f) = $self->wordset($amt);
+    my @words = @{$word_ref};
     @words = shuffle(@words);
     @good = @words[0 .. ($amt-1)]; # get the first <x> words
     @words = $self->wordset($amt);
@@ -77,8 +78,8 @@ sub wordgen {
     }
     db_round_init($f, \@good, \@bad);
   } else {
-    my (@words, $f) = $self->wordset($amt * 2);
-    @words = shuffle(@words);
+    my ($word_ref, $f) = $self->wordset($amt * 2);
+    my @words = shuffle(@{$word_ref});
     @good = @words[0 .. ($amt - 1)];
     @bad = @words[$amt .. (($amt * 2) - 1)];
     db_round_init($f, \@good, \@bad);
