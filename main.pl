@@ -8,7 +8,6 @@ use Bot::BasicBot;
 use List::Util qw( shuffle );
 use RegolfDB qw( db_init db_game_init db_round_init db_round_end db_game_end );
 
-db_init();
 my $wordlist = '/usr/share/dict/words'; # This is our big dictionary of words to pick from. ideally we will make the words similar in some way.
 
 my @good = ();

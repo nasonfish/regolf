@@ -23,6 +23,7 @@ sub db_init {
 }
 
 sub db_game_init {
+  db_init();
   $db->do("INSERT INTO games (ts) VALUES (strftime('%s', 'now'))");
   $gameid = $db->last_insert_id("","","games","");
   print STDOUT "Last insert id is $gameid.\n";
