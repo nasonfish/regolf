@@ -62,7 +62,7 @@ sub db_game_end {
 
 sub db_user_stats {
   my $user = $_[0];
-  my $stmt = $db->prepare("SELECT MIN(score), MAX(score), AVG(score), COUNT(winner), (COUNT(user)-COUNT(winner)) FROM game_scores LEFT JOIN games ON game_scores.id = games.id WHERE user LIKE ?")
+  my $stmt = $db->prepare("SELECT MIN(score), MAX(score), AVG(score), COUNT(winner), (COUNT(user)-COUNT(winner)) FROM game_scores LEFT JOIN games ON game_scores.id = games.id WHERE user LIKE ?");
   $stmt->execute($user);
   #my ($min, $max, $avg, $wins, $losses) = $stmt->fetchrow_array;
   return $stmt->fetchrow_array;
