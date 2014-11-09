@@ -137,7 +137,7 @@ sub said{
     $user = $1 if $1;
     my ($min, $max, $avg, $wins, $losses) = db_user_stats($user);
     if(not defined $min){
-      $self->say(channel => $channnel, body => "$user does not have any records saved in our database.");
+      $self->say(channel => $channel, body => "$user does not have any records saved in our database.");
     } else {
       $self->say(channel => $channel, body => "$user stats: Scores between $min and $max averaging $avg - $wins wins and $losses losses.");
     }
