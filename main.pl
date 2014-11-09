@@ -132,6 +132,11 @@ sub said{
     $self->schedule_tick(1);
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!scores/){
     $self->scores();
+  } elsif($message->{body} =! /^!stats(?: ([^ ]+))$/){
+    my $user = $message->{who};
+    $user = $1 if $1;
+    my $stats = db_user_stats($user);
+    $self->say(channel => $channel, body => "$user stats: Scores between $stats[0] and $stats[1] averaging $stats[2] - $stats[3] wins and $stats[4] losses.");
   } elsif($message->{body} =~ /^!key/){
     $self->say(channel => $channel, body => "r(e)?ge[x] (score/\x033good hit amount\x0f/\x034bad miss amount\x0f): Positive: \x033hit\x0f, \x033words\x0f, \x0314missed\x0f, \x0314words\x0f | Negative: \x0314missed\x0f, \x0314words\x0f, \x034hit\x0f, \x034words\x0f");
   } elsif($message->{channel} eq "msg" and $playing == 1 and $message->{who} !~ /Serv$/){  # in pm, we /are/ playing, it's not a service

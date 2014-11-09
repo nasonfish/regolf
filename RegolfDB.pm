@@ -7,8 +7,8 @@ use DBI;
 require Exporter;
 
 our @ISA = qw( Exporter );
-our @EXPORT_OK = qw( db_init db_game_init db_round_init db_round_end db_game_end );
-our @EXPORT = qw( db_init db_game_init db_round_init db_round_end db_game_end );
+our @EXPORT_OK = qw( db_init db_game_init db_round_init db_round_end db_game_end db_user_stats );
+our @EXPORT = qw( db_init db_game_init db_round_init db_round_end db_game_end db_user_stats );
 
 our $db = DBI->connect("dbi:SQLite:dbname=data.db","","") or die $DBI::errstr;
 our $gameid = undef;
@@ -60,4 +60,10 @@ sub db_game_end {
   }
 }
 
+sub db_user_stats {
+  my $user = $_[0];
+  $stmt = $db->prepare("SELECT MIN(score), MAX(score), AVG(score), COUNT(winner), (COUNT(user)-COUNT(winner)) FROM game_scores WHERE user=? LEFT JOIN games ON game_scores.id = games.id")->execute($user);
+  #my ($min, $max, $avg, $wins, $losses) = $stmt->fetchrow_array;
+  return $stmt->fetchrow_array;
+}
 1;
