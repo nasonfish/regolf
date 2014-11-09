@@ -209,7 +209,7 @@ sub newRound{
   $points = $points < 40 ? 40 : $points;
   $self->say(channel => $channel, body => "\x0305Please match: \x02\x0303" . join(", ", @good) . "\x0f\x02");  # . concatenates, join joins it as an array spliced together with ", "
   $self->say(channel => $channel, body => "\x0305Do not match: \x0304\x02" . join(", ", @bad) . "\x0f\x02");
-  my $time = int(50 + (.37 * $points));
+  my $time = int(20 + (.37 * $points));
   $self->say(channel => $channel, body => "You have $time seconds; Private message me your regular expression(s) using \x02/msg $nick expression\x02!");
   $hurryup = 0;
   $self->schedule_tick($time - 15);
