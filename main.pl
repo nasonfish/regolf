@@ -111,7 +111,6 @@ sub said{
   my($self, $message) = @_;  # the arguments of this function include the self object and the message, which contains all the information we need about the event.
   print STDOUT $message;
   if($message->{channel} eq $channel and not $playing and $message->{body} =~ /^!start(?: !L ([a-zA-Z-]+))?$/){  # channel is correct, we're not already playing, the message starts with !start
-    $playing = 1;
     if($1){
       $roundwordlist = "/usr/share/dict/" . $1;
     } else {
@@ -120,6 +119,7 @@ sub said{
     if (not -e $roundwordlist){
       $self->say(channel => $channel, body => "\x0304Error:\x0f The selected wordlist does not exist - contact bot admin for supported dictionaries.")
     } else {
+      $playing = 1;
       $self->say(channel => $channel, body => "Beginning new regex golf game.");
       db_game_init();
       $self->newRound();
@@ -270,5 +270,6 @@ my $bot = Regolf->new(
   nick => $nick, # the name the bot should use specified at the top of the file
   username => "regolf",
   name => "Perl Regex Golf IRC Bot",  # todo either ctcp the link to the source or put it here
-  flood => 1  # disables flood protection, that sends a message every 3 seconds instead of bursting. this should be required, I'll look into making this work well but work quicker.
+  flood => 1,  # disables flood protection, that sends a message every 3 seconds instead of bursting. this should be required, I'll look into making this work well but work quicker.
+  localaddr => "2604:a880:800:10::1c0:b001"
 )->run(); # go!
