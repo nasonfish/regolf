@@ -9,7 +9,7 @@ use List::Util qw( shuffle );
 use RegolfDB qw( db_init db_game_init db_round_init db_round_end db_game_end );
 
 my $wordlist = '/usr/share/dict/words'; # This is our big dictionary of words to pick from. ideally we will make the words similar in some way.
-
+my $roundwordlist;
 my @good = ();
 my @bad = ();  # two lists
 
@@ -49,7 +49,7 @@ sub wordset {
         $f =~ s/_$j/$letter/g;
       }
       print STDOUT "$f\n";
-      open WORDS, '<', $wordlist or die "Cannot open $wordlist:$!";
+      open WORDS, '<', $roundwordlist or die "Cannot open $roundwordlist:$!";
       while(my $word = <WORDS>){
         chomp($word);
         push @words, $word if $word =~ /^[a-z]{2,}$/i and $word =~ /$f/i;  # filter out names with capitol letters as well as apostrophes and stuff; apply a certain filter
@@ -113,11 +113,17 @@ sub said{
   if($message->{channel} eq $channel and not $playing and $message->{body} =~ /^!start(?: !L ([a-zA-Z-]+))?$/){  # channel is correct, we're not already playing, the message starts with !start
     $playing = 1;
     if($1){
-      $wordlist = "/usr/share/dict/" . $1;
+      $roundwordlist = "/usr/share/dict/" . $1;
+    } else {
+      $roundwordlist = $wordlist;
     }
-    $self->say(channel => $channel, body => "Beginning new regex golf game.");
-    db_game_init();
-    $self->newRound();
+    if (not -e $roundwordlist){
+      $self->say(channel => $channel, body => "\x0304Error:\x0f The selected wordlist does not exist - contact bot admin for supported dictionaries.")
+    } else {
+      $self->say(channel => $channel, body => "Beginning new regex golf game.");
+      db_game_init();
+      $self->newRound();
+    }
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!pause/){
     $playing = 0;
     $self->say(channel => $channel, body => "Pausing current regex golf game.");
