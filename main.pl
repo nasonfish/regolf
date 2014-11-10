@@ -97,7 +97,7 @@ sub said{
       $score = 0;
     }
     $msg =~ s/..$//;
-    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score/\x0303" . (@good - @goodmiss) . "\x0f/\x0304" . (@bad - @badmiss) . "\x0f): $msg"); # who is the name of the person while channel is "msg" for pms
+    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score/\x0303" . (@good - @goodmiss) . "\x0f/\x0304" . (@badmiss) . "\x0f): $msg"); # who is the name of the person while channel is "msg" for pms
     
     if(!exists $roundscores{$message->{who}} or $roundscores{$message->{who}} <= $score){
       $roundexps{ $message->{who} } = $message->{body};
