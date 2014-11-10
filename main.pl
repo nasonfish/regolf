@@ -7,20 +7,11 @@ use base qw(Bot::BasicBot);
 use Bot::BasicBot;
 use List::Util qw( shuffle );
 use RegolfDB qw( db_init db_game_init db_round_init db_round_end db_game_end db_user_stats );
+use WordGenerator qw( word_grab word_generate @good @bad );
+our (@good, @bad, $wordlist, $roundwordlist);
+use ScoreHandler qw( score_check score_out %roundscores %gamescores %roundexps );
+our (%roundscores, %gamescores, %roundexps, $points);
 
-my $wordlist = '/usr/share/dict/words'; # This is our big dictionary of words to pick from. ideally we will make the words similar in some way.
-my $roundwordlist;
-my @good = ();
-my @bad = ();  # two lists
-
-my $usefilters = 0;
-my @filters = ();
-if($usefilters){
-  @filters = ('(\w{3}).*\1', '^_0.*_0$', '^[qwertyuiopasdfghjkl]+$', '^[a-f]+$', '=', '_0_1_2', '^(.)(.)(.?)(.?)(.?)(.?).?\6\5\4\3\2\1$');
-} else {
-  @filters = ('.');
-}
-my @characters = ("a".."z");
 my $hurryup = 0; # we set two timers, one for the hurry up message, so this flicks back and forth between 0 and 1 depending on if we're waiting to end the round (1) or not (0)
 
 my @admins = ();
@@ -30,82 +21,10 @@ while(my $admin = <$a_file>){
   push @admins, $admin;
 }
 close $a_file;
-sub wordset {
-  my ($self, $amt) = @_;
-  my @words = ();
-  my $f = undef;
-  while(@words <= ($amt * 2)){
-    @words = ();
-    $f = $filters[rand @filters];
-    if( $f eq "="){
-      my $num = int(rand(7)+2);
-      print STDOUT $num;
-      for my $n(1000..100000){
-        push @words, $n if $n % $num == 0;
-      }
-    } else {
-      for my $j (0..9) {
-        my $letter = $characters[rand @characters];
-        $f =~ s/_$j/$letter/g;
-      }
-      print STDOUT "$f\n";
-      open WORDS, '<', $roundwordlist or die "Cannot open $roundwordlist:$!";
-      while(my $word = <WORDS>){
-        chomp($word);
-        push @words, $word if $word =~ /^[a-z]{2,}$/i and $word =~ /$f/i;  # filter out names with capitol letters as well as apostrophes and stuff; apply a certain filter
-      }
-      close WORDS;
-    }
-  }
-  return (\@words, $f);
-}
-sub wordgen {
-  my $self = shift;
-  print STDOUT "Generating words.\n";
-  my $amt = int(rand(5)+3); # from 3-8 words
-  if(int(rand(15)) == 10 && $usefilters){
-    print STDOUT "Special round! Using two different sets this time.";
-    my ($word_ref, $f) = $self->wordset($amt);
-    my @words = @{$word_ref};
-    @words = shuffle(@words);
-    @good = @words[0 .. ($amt-1)]; # get the first <x> words
-    @words = $self->wordset($amt);
-    @words = shuffle(@words);
-    @bad = @words[0 .. ($amt-1)];
-    for my $bd (@bad){
-      @good = grep {$_ ne $bd} @good;
-    }
-    db_round_init($f, \@good, \@bad);
-  } else {
-    my ($word_ref, $f) = $self->wordset($amt * 2);
-    my @words = shuffle(@{$word_ref});
-    @good = @words[0 .. ($amt - 1)];
-    @bad = @words[$amt .. (($amt * 2) - 1)];
-    db_round_init($f, \@good, \@bad);
-  }
-}
 
 my $channel = "#regolf";
 my $nick = "regolf";
 my $playing = 0;
-
-my $points = 0;
-
-my %roundscores = ();  # hashes
-my %gamescores = ();
-my %roundexps = ();
-
-sub scores{
-  my $self = shift;
-  my $scorestr = "";
-  for my $key(keys %gamescores){
-    $scorestr .= "\x0310$key: \x0307$gamescores{$key}, ";
-  }
-  $scorestr =~ s/..$//;
-  $scorestr =~ s/^$/No scores have been recorded yet./;
-  $self->say(channel => $channel, body => "\x0312$scorestr\x0f");
-  print STDOUT $scorestr; 
-}
 
 sub said{
   my($self, $message) = @_;  # the arguments of this function include the self object and the message, which contains all the information we need about the event.
@@ -131,7 +50,7 @@ sub said{
     $hurryup = 1;
     $self->schedule_tick(1);
   } elsif($message->{channel} eq $channel and $playing and $message->{body} =~ /^!scores/){
-    $self->scores();
+    score_out($self);
   } elsif($message->{body} =~ /^!stats(?: ([^ ]+))?$/ and $message->{channel} eq $channel){
     my $user = $message->{who};
     $user = $1 if $1;
@@ -202,7 +121,7 @@ sub newRound{
   if(not $playing){
     return;
   }
-  $self->wordgen();
+  word_generate();
   %roundscores = ();
   %roundexps = ();
   $points = length(join("", @good) . join("", @bad));
@@ -237,37 +156,9 @@ sub tick{
       }
     }
     db_round_end(\%roundscores, \%roundexps);
-    $self->scores();
-    $self->checkwin();
+    score_out($self);
+    $playing = score_check($self);
     $self->newRound();
-  }
-}
-
-sub checkwin{
-  my $self = shift;
-  my $winner = 0;
-  my $winscore = 0;
-  my $tie = 0;
-  foreach my $key (keys %gamescores){
-    if($gamescores{ $key } >= 100){
-      if($gamescores{ $key } > $winscore){
-        $winscore = $gamescores{ $key };
-        $winner = $key;
-        $tie = 0;
-      } elsif($gamescores{$key} == $winscore){
-        $tie = 1;
-      }
-    }
-  }
-  if($tie){
-    $self->say(channel=>$channel, body=>"Seems we have \x02a tie!\x02 Let's play until the tie is broken.");
-    return undef;
-  }
-  if($winner){
-    db_game_end(\%gamescores, $winner);
-    %gamescores = ();
-    $self->say(channel=>$channel, body=>"We have a winner! Congratulations to \x02$winner\x02, for winning with \x02$winscore\x02 points!");
-    $playing = 0;
   }
 }
 

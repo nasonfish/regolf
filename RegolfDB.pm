@@ -7,7 +7,6 @@ use DBI;
 require Exporter;
 
 our @ISA = qw( Exporter );
-our @EXPORT_OK = qw( db_init db_game_init db_round_init db_round_end db_game_end db_user_stats );
 our @EXPORT = qw( db_init db_game_init db_round_init db_round_end db_game_end db_user_stats );
 
 our $db = DBI->connect("dbi:SQLite:dbname=data.db","","") or die $DBI::errstr;
