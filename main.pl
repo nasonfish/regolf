@@ -12,7 +12,15 @@ our (@good, @bad, $wordlist, $roundwordlist);
 use ScoreHandler qw( score_check score_out %roundscores %gamescores %roundexps );
 our (%roundscores, %gamescores, %roundexps, $points);
 
-my $hurryup = 0; # we set two timers, one for the hurry up message, so this flicks back and forth between 0 and 1 depending on if we're waiting to end the round (1) or not (0)
+# Configuration of the bot - change these values to their desired values.
+my $ircserver = "irc.esper.net";  # The IRC server to connect to
+my $ircport = 6697;  # The IRC port to connect to
+my $ssl = 1;  # connect with SSL or not?
+
+my $nick = "regolf";  # Bot's nickname
+my $user = "regolf";  # Bot's username
+my $realname = "Perl Regex Golf IRC Bot";  # Bot's realname
+my $channel = "#regolf";  # The channel where the regolf game will be played, and where the bot joins on start-up.
 
 my @admins = ();
 open my $a_file, '<', 'admins.txt';
@@ -22,21 +30,27 @@ while(my $admin = <$a_file>){
 }
 close $a_file;
 
-my $channel = "#regolf";
-my $nick = "regolf";
-my $playing = 0;
+my $hurryup = 0;  # we set two timers, one for the hurry up message, so this flicks back and forth between 0 and 1 depending on if we're waiting to end the round (1) or not (0)
+my $playing = 0;  # Are we playing a game?
 
 sub said{
   my($self, $message) = @_;  # the arguments of this function include the self object and the message, which contains all the information we need about the event.
   print STDOUT $message;
-  if($message->{channel} eq $channel and not $playing and $message->{body} =~ /^!start(?: !L ([a-zA-Z-]+))?$/){  # channel is correct, we're not already playing, the message starts with !start
-    if($1){
-      $roundwordlist = "/usr/share/dict/" . $1;
-    } else {
+  if($message->{channel} eq $channel and not $playing and $message->{body} =~ /^!start/){  # channel is correct, we're not already playing, the message starts with !start
+    if ($message->{body} =~ /^!start(?: !L ([a-zA-Z-]+))?$/){  # Parameter: !L
+      if($1 and length($1)){
+        $roundwordlist = "/usr/share/dict/" . $1;
+      } else {
+        $roundwordlist = $wordlist;
+      }
+    } elsif($message->{body} =~ /^!start (.+)/){  # No valid parameters
+      $self->say(channel => $channel, body => "\x0304Error:\x0f The parameter '$1' is not supported, starting regular regolf game.");
+      $roundwordlist = $wordlist;
+    } else {  # No parameters
       $roundwordlist = $wordlist;
     }
     if (not -e $roundwordlist){
-      $self->say(channel => $channel, body => "\x0304Error:\x0f The selected wordlist does not exist - contact bot admin for supported dictionaries.")
+      $self->say(channel => $channel, body => "\x0304Error:\x0f The selected wordlist ('$roundwordlist') does not exist - contact a bot admin for supported dictionaries.");
     } else {
       $playing = 1;
       $self->say(channel => $channel, body => "Beginning new regex golf game.");
@@ -97,8 +111,8 @@ sub said{
       $score = 0;
     }
     $msg =~ s/..$//;
-    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score/\x0303" . (@good - @goodmiss) . "\x0f/\x0304" . (@badmiss) . "\x0f): $msg"); # who is the name of the person while channel is "msg" for pms
-    
+    $self->notice(who => $message->{who}, channel=>"msg", body=>"$message->{body} ($score/\x0303" . (@good - @goodmiss) . "\x0f/\x0304" . (@badmiss) . "\x0f): $msg");  # who is the name of the person while channel is "msg" for pms
+
     if(!exists $roundscores{$message->{who}} or $roundscores{$message->{who}} <= $score){
       $roundexps{ $message->{who} } = $message->{body};
       $roundscores{ $message->{who} } = $score;
@@ -109,11 +123,16 @@ sub said{
 
 sub connected{
   my $self = shift;
-  open my $file, '<', 'pwd.txt';
-  my $pwd = <$file>;
-  chomp($pwd);
-  $self->say(who => "NickServ", channel => "msg", "body" => "IDENTIFY regolf $pwd");  # once we're connected we identify with NickServ with the password in pwd.txt
-  close $file;
+  if(-e 'pwd.txt'){
+    open my $file, '<', 'pwd.txt';
+    my $pwd = <$file>;
+    if(length($pwd)){
+      print STDOUT "Attempting to identify to NickServ account '$nick'.\r\n";
+      chomp($pwd);
+      $self->say(who => "NickServ", channel => "msg", "body" => "IDENTIFY $nick $pwd");  # once we're connected we identify with NickServ with the password in pwd.txt
+    }
+    close $file;
+  }
 }
 
 sub newRound{
@@ -148,7 +167,7 @@ sub tick{
       $playing = 0;
     }
     foreach my $i (keys %roundexps){
-      $self->say(channel=>$channel, body=>"User $i submitted \x02$roundexps{$i}\x02 - worth \x02$roundscores{$i}\x02 points.");  # just return nick: regex  into the channel.
+      $self->say(channel=>$channel, body=>"User $i submitted \x02$roundexps{$i}\x02 - worth \x02$roundscores{$i}\x02 points.");  # just return nick: regex into the channel.
       if(!exists $gamescores{$i}){
         $gamescores{ $i } = $roundscores{$i};
       } else {
@@ -162,14 +181,19 @@ sub tick{
   }
 }
 
+print STDOUT "Attempting to connect to $ircserver:$ircport" . ($ssl ? " with SSL. " : ". ") . "Using the name $nick (\"$realname\") and joining $channel.\r\n";
+
+# This is where the configuration at the top of the file comes into play.
+# If you haven't configured your bot yet, please edit the variables at the top of the file.
 my $bot = Regolf->new(
-  server => "irc.esper.net",  # pool
-  port => 6697,  # ssl port
-  ssl => 1,  # true-y value
-  channels => [$channel],  # the channel was specified at the top of the file
-  nick => $nick, # the name the bot should use specified at the top of the file
-  username => "regolf",
-  name => "Perl Regex Golf IRC Bot",  # todo either ctcp the link to the source or put it here
+  server => $ircserver,
+  port => $ircport,
+  ssl => $ssl,
+  channels => [$channel],
+  nick => $nick,
+  username => $user,
+  name => $realname,  # todo either ctcp the link to the source or put it here
   flood => 1,  # disables flood protection, that sends a message every 3 seconds instead of bursting. this should be required, I'll look into making this work well but work quicker.
   localaddr => "2604:a880:800:10::1c0:b001"
-)->run(); # go!
+)->run();  # go!
+
